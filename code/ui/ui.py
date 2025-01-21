@@ -1,6 +1,7 @@
 import osTimer
 import utime
 import sim
+import net
 
 try:
     from dev.lcd import ST7789
@@ -99,13 +100,15 @@ class MenuBar(AbstractLoad):
         self.menu_bar = None
 
         self.base_timer = osTimer()
+        self.get_battery_timer = osTimer()
+        self.get_signal_timer = osTimer()
 
     def instance_after(self):
         EventMap.bind("menubar__show", self.__show)
         EventMap.bind("menubar__flush", self.__flush)
         EventMap.bind("menubar__close", self.__close)
 
-        EventMap.bind("menubar__update_net_status", self.__update_net_status)
+        # EventMap.bind("menubar__update_net_status", self.__update_net_status)
         EventMap.bind("menubar__update_poc_status", self.__update_poc_status)
 
     def __close(self, event=None, msg=None):
@@ -134,6 +137,7 @@ class MenuBar(AbstractLoad):
         self.lab_signal = lv.label(self.menu_bar)
         self.lab_signal.set_text("x")
         self.lab_signal.align(lv.ALIGN.LEFT_MID, 28, 0)
+        self.lab_signal.add_style(FontStyle.consolas_12_txt000000_bg2195f6, lv.PART.MAIN | lv.STATE.DEFAULT)
         net_status = EventMap.send("netservice__get_net_generation")
         if net_status:
             self.img_signal.set_src("U:/img/signal_5.png")
@@ -147,6 +151,14 @@ class MenuBar(AbstractLoad):
         self.img_poc.add_style(CommonStyle.img_style, lv.PART.MAIN | lv.STATE.DEFAULT)
         self.img_poc.align(lv.ALIGN.LEFT_MID, 58, 0)
 
+        self.img_gps = lv.img(self.menu_bar)
+        # self.img_gps.set_src("U:/img/gps.png")
+        self.img_gps.set_size(20, 20)
+        self.img_gps.set_pivot(0, 0)
+        self.img_gps.set_angle(0)
+        self.img_gps.add_style(CommonStyle.img_style, lv.PART.MAIN | lv.STATE.DEFAULT)
+        self.img_gps.align(lv.ALIGN.RIGHT_MID, -65, 0)
+
 
         self.img_battery = lv.img(self.menu_bar)
         # self.img_battery.set_src("U:/img/battery_4.png")
@@ -156,17 +168,26 @@ class MenuBar(AbstractLoad):
         self.img_battery.set_pivot(0, 0)
         self.img_battery.set_angle(0)
         self.img_battery.add_style(CommonStyle.img_style, lv.PART.MAIN | lv.STATE.DEFAULT)
-        self.img_battery.align(lv.ALIGN.RIGHT_MID, -40, 0)
+        self.img_battery.align(lv.ALIGN.RIGHT_MID, -40, 1)
         self.lab_battery = lv.label(self.menu_bar)
         self.lab_battery.set_text("100%")
         self.lab_battery.align(lv.ALIGN.RIGHT_MID, -2, 0)
+        self.lab_battery.add_style(FontStyle.consolas_12_txt000000_bg2195f6, lv.PART.MAIN | lv.STATE.DEFAULT)
         
         self.lab_time = lv.label(self.menu_bar)
         self.lab_time.set_text("")
         self.lab_time.align(lv.ALIGN.CENTER, 0, 0)
+        self.lab_time.add_style(FontStyle.consolas_12_txt000000_bg2195f6, lv.PART.MAIN | lv.STATE.DEFAULT)
 
         self.__update_time()
+        self.__update_battery()
+        self.__update_signal()
         self.base_timer.start(500, 1, self.__update_time)
+        self.get_battery_timer.start(10000, 1, self.__update_battery)
+        self.get_signal_timer.start(2000, 1, self.__update_signal)
+
+        EventMap.bind("menubar__update_gps_status", self.__update_gps_status)
+        
 
     def __flush(self, event, msg):
         pass
@@ -176,9 +197,15 @@ class MenuBar(AbstractLoad):
         if time:
             self.lab_time.set_text(time[1])
 
-    def __update_net_status(self, event, msg):
-        if msg:
-            self.img_signal.set_src("U:/img/signal_5.png")
+    def __update_battery(self, arg=None):
+        battery = EventMap.send("screen_get_battery")
+        if battery:
+            self.img_battery.set_src(battery)
+
+    def __update_signal(self, arg=None):
+        sig = EventMap.send("screen_get_signal")
+        if 0 < sig <= 31:
+            self.img_signal.set_src('U:/img/signal_' + str(int(sig * 5 / 31)) + '.png')
             self.lab_signal.set_text("4G")
         else:
             self.img_signal.set_src("U:/img/signal_0.png")
@@ -197,6 +224,14 @@ class MenuBar(AbstractLoad):
         elif 2 == msg:
             self.img_poc.clear_flag(lv.obj.FLAG.HIDDEN)
             self.img_poc.set_src("U:/img/poc_play.png")
+
+    def __update_gps_status(self, event, msg):
+        print("__update_gps_status -----------------  {}".format(msg))
+        if not msg:
+            self.img_gps.add_flag(lv.obj.FLAG.HIDDEN)
+        else:
+            self.img_gps.clear_flag(lv.obj.FLAG.HIDDEN)
+            self.img_gps.set_src("U:/img/gps.png")
 
 
 class ToolBar():
@@ -235,13 +270,12 @@ class PromptBox(AbstractLoad):
         show_msg = msg.get("msg")
 
         self.prompt_box = lv.msgbox(meta, "PromptBox", "", [], False)
-        # self.prompt_box.add_style(style_group_1, lv.PART.MAIN | lv.STATE.DEFAULT)
         self.prompt_box.set_size(180, 90)
         self.prompt_box.align(lv.ALIGN.CENTER, 0, 0)
         self.prompt_label = lv.label(self.prompt_box)
         self.prompt_label.set_pos(0, 0)
         self.prompt_label.set_size(140, 50)
-        self.prompt_label.add_style(FontStyle.montserrat14_txt000000_bg2195f6, lv.PART.MAIN | lv.STATE.DEFAULT)
+        self.prompt_label.add_style(FontStyle.consolas_12_txt000000_bg2195f6, lv.PART.MAIN | lv.STATE.DEFAULT)
         self.prompt_label.set_text(show_msg)
         self.prompt_label.set_long_mode(lv.label.LONG.WRAP)
         self.prompt_label.set_style_text_align(lv.TEXT_ALIGN.CENTER, 0)                         
@@ -257,7 +291,7 @@ class MainScreen(Screen):
         self.meta = lv.obj()    # lvgl meta object
 
         self.btn_list = []
-        self.btn_list_name = ["Group Selection", "Member Selection", "Device Information", "Weather", "Setting"]
+        self.btn_list_name = ["群组管理", "成员列表", "设备信息", "天气", "设置"]
         self.curr_idx = 0
         self.count = len(self.btn_list_name)
 
@@ -359,9 +393,9 @@ class WelcomeScreen(Screen):
         self.msgbox_tip.align(lv.ALIGN.CENTER, 0, 0)
         self.lab_msgboxtip = lv.label(self.msgbox_tip)
         self.lab_msgboxtip.set_size(140, 50)
-        self.lab_msgboxtip.set_text("initializing...")
+        self.lab_msgboxtip.set_text("初始化中...")
         self.lab_msgboxtip.set_long_mode(lv.label.LONG.SCROLL_CIRCULAR)
-        self.lab_msgboxtip.add_style(FontStyle.montserrat14_txt000000_bg2195f6, lv.PART.MAIN | lv.STATE.DEFAULT)
+        self.lab_msgboxtip.add_style(FontStyle.consolas_12_txt000000_bg2195f6, lv.PART.MAIN | lv.STATE.DEFAULT)
         self.lab_msgboxtip.set_style_text_align(lv.TEXT_ALIGN.LEFT, 0)
         self.lab_msgboxtip.align(lv.ALIGN.CENTER, 0, 0)
 
@@ -379,10 +413,10 @@ class WelcomeScreen(Screen):
                 break
         if 0 == sim.getStatus():
             self.net_status = 1   # 未插卡标志 
-            self.lab_msgboxtip.set_text("no sim card.")
+            self.lab_msgboxtip.set_text("未检测到sim卡")
             EventMap.send("mediaservice__tts_play", ("未检测到sim卡", 0))
         else:
-            self.lab_msgboxtip.set_text("network registration.")
+            self.lab_msgboxtip.set_text("网络注册中...")
             self.check_net_timer.start(40 * 1000, 0, lambda arg: self.__check_net_status())
             self.check_xin_timer.start(20 * 1000, 0, lambda arg: self.__check_xin_result())
 
@@ -390,7 +424,7 @@ class WelcomeScreen(Screen):
         EventMap.send("pocservice__check_xin_platform")
         if self.error_reason == "已被芯平台绑定":
             self.check_net_timer.stop()
-            self.lab_msgboxtip.set_text("has been bound by xin platform.")
+            self.lab_msgboxtip.set_text("已被芯平台绑定")
             EventMap.send("mediaservice__tts_play", (self.error_reason, 0))
 
     def __net_status(self, event, msg):
@@ -424,13 +458,13 @@ class WelcomeScreen(Screen):
             reason = self.error_reason  
         elif self.net_status == 3:
             self.check_xin_timer.stop()
-            reason = "network anomaly."
+            reason = "网络异常"
         elif self.net_status == 2 and self.cloud_status != 1:
-            reason = "account logging..."
+            reason = "账号登录中..."
         else:
-            reason = "search network..."
+            reason = "网络搜索中..."
         if "帐号不存在" == reason:
-            self.lab_msgboxtip.set_text("account does not exist.")
+            self.lab_msgboxtip.set_text("账号不存在")
             EventMap.send("mediaservice__tts_play", (reason, 0))
         else:
             self.lab_msgboxtip.set_text(reason)
@@ -441,44 +475,42 @@ class MemberScreen(Screen):
 
     def __init__(self):
         super().__init__()
-        self.meta = lv.obj()    # lvgl meta object
+        self.cur = 0
+        self.count = 6
 
         self.btn_list = []
-        self.btn_list_name = ["Member1", "Member2", "Member3", "Member4", "Member5", "Member6", "Member7", "Member8"]
         self.curr_idx = 0
-        self.count = len(self.btn_list_name)
+        self.member_check_cur_list = list()
+        self.member_btn_list = list()
+        self.member_list = list()
+        self.count = len(self.member_btn_list)
+        self.member_update_flag = True
 
-    def load(self):
+        self.msgbox_close_time = 2
+        self.msgbox_close_timer = osTimer()
+
+        self.meta = lv.obj()    # lvgl meta object
+
         self.meta.add_style(CommonStyle.default, lv.PART.MAIN | lv.STATE.DEFAULT)
 
         # 列表------------------------------------------------------------------------------------------
         self.list_menu = lv.list(self.meta)
-        self.list_menu.set_pos(0, 40)
-        self.list_menu.set_size(240, 200)
-        self.list_menu.set_style_pad_left(0, 0)
-        self.list_menu.set_style_pad_right(0, 0)
-        self.list_menu.set_style_pad_top(0, 0)
-        self.list_menu.set_style_pad_row(1, 0)
-        self.list_menu.add_style(CommonStyle.container_bgffffff, lv.PART.MAIN | lv.STATE.DEFAULT)
-        self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.DEFAULT)
-        self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.SCROLLED)
-		
-		# 添加管理列表------------------------------------------------------------------------------------------
-        self.btn_list = []
-        for idx, item in enumerate(self.btn_list_name):
-            btn = lv.btn(self.list_menu)
-            btn.set_pos(20, 0)
-            btn.set_size(240, 47)
-            btn.add_style(MainScreenStyle.btn_group, lv.PART.MAIN | lv.STATE.DEFAULT)
-            img = lv.img(btn)
-            img.align(lv.ALIGN.LEFT_MID, 10, 0)
-            img.set_size(32, 32)
-            img.set_src('U:/img/number_{}.png'.format(idx + 1))
-            lab = lv.label(btn)
-            lab.align(lv.ALIGN.LEFT_MID, 50, 13)
-            lab.set_size(210, 40)
-            lab.set_text(item)
-            self.btn_list.append((btn, img, lab))
+
+    def load_before(self):
+        EventMap.bind("get_member_check_list", self.__get_member_check_list)
+        EventMap.bind("send_select_member_list", self.__send_select_member_list)
+        EventMap.bind("update_member_info", self.update_member_info)
+
+    def load(self):
+        self.__load_member_list()
+        self.__member_screen_list_create()
+        self.__load_group_cur()
+        if self.member_list is None or self.member_list == -1 or not len(self.member_list):
+            EventMap.send("load_msgbox", "此群组无成员")
+            return False
+        if self.cur >= 0:
+            self.clear_state()
+        self.cur = 0
         self.add_state()
 
     def add_state(self):    # 添加选中状态
@@ -494,7 +526,6 @@ class MemberScreen(Screen):
         currBtn.set_style_bg_grad_color(LVGLColor.BASE_COLOR_WHITE, lv.PART.MAIN | lv.STATE.DEFAULT)
         self.btn_list[self.curr_idx][2].set_long_mode(lv.label.LONG.SCROLL_CIRCULAR)
         currBtn.scroll_to_view(lv.ANIM.OFF)
-        
 
     def key2_once_click(self, event=None, msg=None):
         self.clear_state()
@@ -505,10 +536,99 @@ class MemberScreen(Screen):
         pass
 
     def key2_long_press(self, event=None, msg=None):
+        EventMap.send("close_msgbox")
         EventMap.send("load_screen",{"screen": "MainScreen"})
         if self.curr_idx > 0:
             self.clear_state()
             self.curr_idx = 0
+
+    def __get_member_check_list(self, topic=None, mode=None):
+        if self.member_check_cur_list:
+            return True
+        else:
+            return False
+        
+    def __send_select_member_list(self, topic=None, mode=None):
+        self.cur = 0
+        self.member_update_flag = True
+        send_list = []
+        for i in self.member_check_cur_list:
+            send_list.append(self.member_list[i][0])
+        # EventMap.send("member_speakbtn_click", send_list)
+        # EventMap.send("load_screen", {"screen": "MainScreen"})
+        # self.__clear_member_img_state()
+
+    def __clear_member_img_state(self):
+        if self.member_check_cur_list:
+            for i in self.member_check_cur_list:
+                member_state = self.member_list[i][2]
+                if member_state == 1:
+                    img_path_name = "U:/img/member_online.png"
+                else:
+                    img_path_name = "U:/img/member_onlines.png"
+                self.member_btn_list[i][0].set_src(img_path_name)
+            self.member_check_cur_list = []
+
+    def update_member_info(self, event, mode):
+        self.member_update_flag = True
+
+    def __load_member_list(self):
+        if not self.member_update_flag:
+            return
+        else:
+            response = EventMap.send("member_get_list")
+            print(response)
+            if response:
+                self.count, self.member_list = response
+
+    def __member_screen_list_create(self):
+        """成员界面列表重新创建"""
+        # 把之前的list删掉
+        if self.member_update_flag:
+            self.list_menu.delete()
+            # 再创建list
+            self.list_menu = lv.list(self.meta)
+            self.list_menu.set_pos(0, 40)
+            self.list_menu.set_size(240, 200)
+            self.list_menu.set_style_pad_left(0, 0)
+            self.list_menu.set_style_pad_right(0, 0)
+            self.list_menu.set_style_pad_top(0, 0)
+            self.list_menu.set_style_pad_row(1, 0)
+            self.list_menu.add_style(CommonStyle.container_bgffffff, lv.PART.MAIN | lv.STATE.DEFAULT)
+            self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.DEFAULT)
+            self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.SCROLLED)
+            if self.count:
+                # 根据从poc_main接收的member列表往member_screen_list
+                self.add_member_msg(0, self.count)
+                self.member_update_flag = False
+            else:
+                # 无成员信息弹窗提示
+                EventMap.send("load_msgbox", "无成员")
+
+    def add_member_msg(self, index, end):
+        self.member_btn_list = []
+        for each in self.member_list[index:end]:
+            btn = lv.btn(self.list_menu)
+            btn.set_pos(20, 0)
+            btn.set_size(240, 47)
+            btn.add_style(MainScreenStyle.btn_group, lv.PART.MAIN | lv.STATE.DEFAULT)
+            img = lv.img(btn)
+            img.align(lv.ALIGN.LEFT_MID, 10, 0)
+            img.set_size(32, 32)
+            img.set_src('U:/img/number_{}.png'.format(each[4] + 1))
+            lab = lv.label(btn)
+            lab.align(lv.ALIGN.LEFT_MID, 50, 13)
+            lab.set_size(210, 40)
+            lab.set_text(each[1])
+            self.btn_list.append((btn, img, lab))
+        self.add_state()
+
+    def __load_group_cur(self):
+        ret = EventMap.send("get_group_name")
+        if ret:
+            print(ret)
+            EventMap.send("load_msgbox", '当前群组: {}'.format(ret))
+            self.msgbox_close_timer.start(self.msgbox_close_time * 1000, 0, lambda arg: EventMap.send("close_msgbox"))
 
 
 class GroupScreen(Screen):  
@@ -516,44 +636,39 @@ class GroupScreen(Screen):
 
     def __init__(self):
         super().__init__()
-        self.meta = lv.obj()    # lvgl meta object
+        self.cur = 0
+        self.count = 6
+        self.current_button = None
 
         self.btn_list = []
-        self.btn_list_name = ["Group1", "Group2", "Group3"]
+        self.group_list = list()
         self.curr_idx = 0
-        self.count = len(self.btn_list_name)
+        self.group_update_flag = True
+        self.group_bottom_name = None
 
-    def load(self):
+        self.msgbox_close_time = 2
+        self.msgbox_close_timer = osTimer()
+
+        self.meta = lv.obj()    # lvgl meta object
+
         self.meta.add_style(CommonStyle.default, lv.PART.MAIN | lv.STATE.DEFAULT)
 
         # 列表------------------------------------------------------------------------------------------
         self.list_menu = lv.list(self.meta)
-        self.list_menu.set_pos(0, 40)
-        self.list_menu.set_size(240, 200)
-        self.list_menu.set_style_pad_left(0, 0)
-        self.list_menu.set_style_pad_right(0, 0)
-        self.list_menu.set_style_pad_top(0, 0)
-        self.list_menu.set_style_pad_row(1, 0)
-        self.list_menu.add_style(CommonStyle.container_bgffffff, lv.PART.MAIN | lv.STATE.DEFAULT)
-        self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.DEFAULT)
-        self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.SCROLLED)
-		
-		# 添加管理列表------------------------------------------------------------------------------------------
-        self.btn_list = []
-        for idx, item in enumerate(self.btn_list_name):
-            btn = lv.btn(self.list_menu)
-            btn.set_pos(20, 0)
-            btn.set_size(240, 47)
-            btn.add_style(MainScreenStyle.btn_group, lv.PART.MAIN | lv.STATE.DEFAULT)
-            img = lv.img(btn)
-            img.align(lv.ALIGN.LEFT_MID, 10, 0)
-            img.set_size(32, 32)
-            img.set_src('U:/img/number_{}.png'.format(idx + 1))
-            lab = lv.label(btn)
-            lab.align(lv.ALIGN.LEFT_MID, 50, 13)
-            lab.set_size(210, 40)
-            lab.set_text(item)
-            self.btn_list.append((btn, img, lab))
+
+    def load_before(self):
+        EventMap.bind("update_group_info", self.__update_group_info)
+
+    def load(self):
+        self.__load_group_list()
+        self.__group_screen_list_create()
+        self.__load_group_cur()
+        if self.group_list is None or self.group_list == -1 or not len(self.group_list):
+            EventMap.send("load_msgbox", "未加入群组")
+            return False
+        if self.cur >= 0:
+            self.clear_state()
+        self.cur = 0
         self.add_state()
         
     def add_state(self):    # 添加选中状态
@@ -579,10 +694,75 @@ class GroupScreen(Screen):
         pass
 
     def key2_long_press(self, event=None, msg=None):
+        EventMap.send("close_msgbox")
         EventMap.send("load_screen",{"screen": "MainScreen"})
         if self.curr_idx > 0:
             self.clear_state()
             self.curr_idx = 0
+
+    def __update_group_info(self, event, mode):
+        # 更新群组
+        self.group_update_flag = True
+
+    def __load_group_list(self):
+        if not self.group_update_flag:
+            return
+        response = EventMap.send("group_get_list")
+        # 判断是否获取到组群列表
+        # print(response)
+        if response:
+            self.count, self.group_list = response
+
+    def __group_screen_list_create(self):
+        """组群界面列表重新创建"""
+        # 把之前的list删掉
+        if self.group_update_flag:
+            self.list_menu.delete()
+            # 再创建list
+            self.list_menu = lv.list(self.meta)
+            self.list_menu.set_pos(0, 40)
+            self.list_menu.set_size(240, 200)
+            self.list_menu.set_style_pad_left(0, 0)
+            self.list_menu.set_style_pad_right(0, 0)
+            self.list_menu.set_style_pad_top(0, 0)
+            self.list_menu.set_style_pad_row(1, 0)
+            self.list_menu.add_style(CommonStyle.container_bgffffff, lv.PART.MAIN | lv.STATE.DEFAULT)
+            self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.DEFAULT)
+            self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.SCROLLED)
+            if self.count:
+                # 根据从poc_main接收的group列表往group_list
+                self.add_group_msg(0, self.count)
+                self.group_update_flag = False
+            else:
+                # 无组群信息弹窗提示
+                # print("No group found")
+                EventMap.send("load_msgbox", "无群组")
+
+    def add_group_msg(self, index, end):
+        self.btn_list = []
+        for each in self.group_list[index:end]:
+            btn = lv.btn(self.list_menu)
+            btn.set_pos(20, 0)
+            btn.set_size(240, 50)
+            btn.add_style(MainScreenStyle.btn_group, lv.PART.MAIN | lv.STATE.DEFAULT)
+            img = lv.img(btn)
+            img.align(lv.ALIGN.LEFT_MID, 10, 0)
+            img.set_size(32, 32)
+            img.set_src('U:/img/number_{}.png'.format(each[3] + 1))
+            lab = lv.label(btn)
+            lab.align(lv.ALIGN.LEFT_MID, 50, 11)
+            lab.set_size(210, 40)
+            lab.set_text(each[1])
+            lab.add_style(FontStyle.consolas_12_txt000000_bg2195f6, lv.PART.MAIN | lv.STATE.DEFAULT)
+            self.btn_list.append((btn, img, lab))
+        self.add_state()
+
+    def __load_group_cur(self):
+        ret = EventMap.send("get_group_name")
+        if ret:
+            print(ret)
+            EventMap.send("load_msgbox", '当前群组: {}'.format(ret))
+            self.msgbox_close_timer.start(self.msgbox_close_time * 1000, 0, lambda arg: EventMap.send("close_msgbox"))
 
 
 class SettingScreen(Screen):
@@ -593,7 +773,7 @@ class SettingScreen(Screen):
         self.meta = lv.obj()    # lvgl meta object
 
         self.btn_list = []
-        self.btn_list_name = ["About this machine", "Wallpaper", "Language", "USB", "Power"]
+        self.btn_list_name = ["关于本机", "壁纸"]
         self.curr_idx = 0
         self.count = len(self.btn_list_name)
 
@@ -659,6 +839,30 @@ class SettingScreen(Screen):
             self.curr_idx = 0
 
 
+class WeatherScreen(Screen): 
+    NAME = "WeatherScreen"
+    
+    def __init__(self):
+        super().__init__()
+        self.meta = lv.obj()    # lvgl meta object
+
+    def load(self):
+        self.meta.add_style(CommonStyle.default, lv.PART.MAIN | lv.STATE.DEFAULT)
+        # 列表------------------------------------------------------------------------------------------
+        self.list_menu = lv.list(self.meta)
+        self.list_menu.set_pos(0, 40)
+        self.list_menu.set_size(240, 200)
+        self.list_menu.set_style_pad_left(0, 0)
+        self.list_menu.set_style_pad_right(0, 0)
+        self.list_menu.set_style_pad_top(0, 0)
+        self.list_menu.set_style_pad_row(1, 0)
+        self.list_menu.add_style(CommonStyle.container_bgffffff, lv.PART.MAIN | lv.STATE.DEFAULT)
+        self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.DEFAULT)
+        self.list_menu.add_style(MainScreenStyle.list_scrollbar, lv.PART.SCROLLBAR | lv.STATE.SCROLLED)
+        
+    def key2_long_press(self, event=None, msg=None):
+        EventMap.send("load_screen",{"screen": "MainScreen"})
+
 class DeviceScreen(Screen):
     NAME = "DeviceScreen"
 
@@ -667,7 +871,7 @@ class DeviceScreen(Screen):
         self.meta = lv.obj()    # lvgl meta object
 
         self.btn_list = []
-        self.btn_list_name = ["Firmware", "IMEI", "ICCID"]
+        self.btn_list_name = ["固件版本", "IMEI", "ICCID"]
         self.curr_idx = 0
         self.count = len(self.btn_list_name)
 
@@ -730,6 +934,8 @@ class DeviceScreen(Screen):
             EventMap.send("load_screen", {"screen": "IMEIScreen"})
         elif self.curr_idx == 2:
             EventMap.send("load_screen", {"screen": "ICCIDScreen"})
+        elif self.curr_idx == 3:
+            EventMap.send("load_screen", {"screen": "LbsInfoScreen"})
             
     def key2_long_press(self, event=None, msg=None):
         EventMap.send("load_screen",{"screen": "MainScreen"})
@@ -758,6 +964,7 @@ class ICCIDScreen(Screen):
 		
     def key2_long_press(self, event=None, msg=None):
         EventMap.send("load_screen",{"screen": "DeviceScreen"})
+        self.lab_iccid.set_text("")
 
 
 class IMEIScreen(Screen):
@@ -849,6 +1056,7 @@ class PocUI(AbstractLoad):
         EventMap.bind("key2_once_click", self.key2_once_click)
         EventMap.bind("key2_double_click", self.key2_double_click)
         EventMap.bind("key2_long_press", self.key2_long_press)
+        EventMap.bind("lcd_state_manage", self.lcd_sleep_enable)
 
         for bar in self.bar_list: bar.instance_after()
         for box in self.msgbox_list: box.instance_after()
@@ -863,6 +1071,7 @@ class PocUI(AbstractLoad):
         
         {
             "type": "promptbox", # 默认提示框
+            "title": "[promptbox]"
             "msg": "hello world",
             "mode": 0
         }
@@ -872,13 +1081,14 @@ class PocUI(AbstractLoad):
             _type = "{}__show".format(type.lower())
             _msg = {
                 "meta":self.curr_screen.meta,
-                "msg": msg.get("msg"),
+                "msg": msg.get("msg", "[promptbox]"),
                 "mode": msg.get("mode", 0)
             }
             EventMap.send(_type, _msg)
         else:
             _msg = {
                 "meta":self.curr_screen.meta,
+                "title": "[promptbox]",
                 "msg": msg,
                 "mode": 0
             }
@@ -913,7 +1123,7 @@ class PocUI(AbstractLoad):
             scr.load()
             scr.load_after()
             lv.img.cache_invalidate_src(None)
-            lv.img.cache_set_size(16)
+            lv.img.cache_set_size(8)
             lv.scr_load(self.curr_screen.meta) # load lvgl meta object
 
     def add_bar(self, bar):
@@ -996,8 +1206,6 @@ class PocUI(AbstractLoad):
         # Power.powerDown()
         self.lcd_sleep_enable()
         self.curr_screen.key2_long_press()
-
-
 
 
 

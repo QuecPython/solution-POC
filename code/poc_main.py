@@ -13,6 +13,7 @@ try:
                       MemberScreen,\
                       GroupScreen,\
                       SettingScreen,\
+                      WeatherScreen,\
                       DeviceScreen,\
                       ICCIDScreen,\
                       IMEIScreen,\
@@ -29,6 +30,7 @@ except:
                           MemberScreen,\
                           GroupScreen,\
                           SettingScreen,\
+                          WeatherScreen,\
                           DeviceScreen,\
                           ICCIDScreen,\
                           IMEIScreen,\
@@ -126,19 +128,19 @@ class App(object):
 
 if __name__ == '__main__':
     
-    #=== 1.添加按键 ===
+    #=== 1.Add key ===
     App.add_key(KeyManger())
 
-    #=== 2.添加主UI ===
+    #=== 2.add main UI ===
     App.set_ui(PocUI())
 
-    #=== 3.添加屏幕栏 ===
+    #=== 3.Add screen bar ===
     App.add_bar(MenuBar())
 
-    #=== 4.添加消息框 ===
+    #=== 4.Add message box ===
     App.add_msgbox(PromptBox())
 
-    #=== 5.添加UI屏幕 ===
+    #=== 5.Add UI screen ===
     App.add_screen( MenuBar()) \
         .add_screen( MainScreen()) \
         .add_screen( WelcomeScreen() ) \
@@ -149,15 +151,17 @@ if __name__ == '__main__':
         .add_screen( DeviceScreen() ) \
         .add_screen( ICCIDScreen() ) \
         .add_screen( IMEIScreen()) \
-        .add_screen( FirmwareScreen() )
+        .add_screen( FirmwareScreen() ) \
+        .add_screen( WeatherScreen())
     
-    #=== 6.添加服务 ===
+    #=== 6.Add Service ===
     App.add_service( NetService()) \
         .add_service( PocService()) \
         .add_service( MediaService()) \
-        .add_service( DevInfoService() ) 
+        .add_service( DevInfoService() ) \
+        .add_service( BatteryManager() )
 
-    #=== 7.运行App ===
+    #=== 7.Run the app ===
     App.exec()
 
 

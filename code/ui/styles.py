@@ -27,6 +27,7 @@ class LVGLColor(object):
 
 class FontStyle(object):
     montserrat14_txt000000_bg2195f6 = lv.style_t()
+    consolas_12_txt000000_bg2195f6 = lv.style_t()
 
     @classmethod
     def init_style(cls):
@@ -38,12 +39,26 @@ class FontStyle(object):
         cls.montserrat14_txt000000_bg2195f6.set_bg_opa(0)
         cls.montserrat14_txt000000_bg2195f6.set_text_color(lv.color_make(0x00, 0x00, 0x00))
         cls.montserrat14_txt000000_bg2195f6.set_text_font(lv.font_montserrat_14)
-        # cls.montserrat14_txt000000_bg2195f6.set_text_font_v2("lv_font_18.bin", 24, 0)
         cls.montserrat14_txt000000_bg2195f6.set_text_letter_space(0)
         cls.montserrat14_txt000000_bg2195f6.set_pad_left(0)
         cls.montserrat14_txt000000_bg2195f6.set_pad_right(0)
         cls.montserrat14_txt000000_bg2195f6.set_pad_top(0)
         cls.montserrat14_txt000000_bg2195f6.set_pad_bottom(0)
+
+        
+        cls.consolas_12_txt000000_bg2195f6.init()
+        cls.consolas_12_txt000000_bg2195f6.set_radius(0)
+        cls.consolas_12_txt000000_bg2195f6.set_bg_color(lv.color_make(0x21, 0x95, 0xf6))
+        cls.consolas_12_txt000000_bg2195f6.set_bg_grad_color(lv.color_make(0x21, 0x95, 0xf6))
+        cls.consolas_12_txt000000_bg2195f6.set_bg_grad_dir(lv.GRAD_DIR.VER)
+        cls.consolas_12_txt000000_bg2195f6.set_bg_opa(0)
+        cls.consolas_12_txt000000_bg2195f6.set_text_color(lv.color_make(0x00, 0x00, 0x00))
+        cls.consolas_12_txt000000_bg2195f6.set_text_font(lv.font_consolas_12)
+        cls.consolas_12_txt000000_bg2195f6.set_text_letter_space(0)
+        cls.consolas_12_txt000000_bg2195f6.set_pad_left(0)
+        cls.consolas_12_txt000000_bg2195f6.set_pad_right(0)
+        cls.consolas_12_txt000000_bg2195f6.set_pad_top(0)
+        cls.consolas_12_txt000000_bg2195f6.set_pad_bottom(0)
 
 class CommonStyle(object):
     default = lv.style_t()
@@ -60,6 +75,7 @@ class CommonStyle(object):
         cls.default.set_radius(0)
         cls.default.set_img_recolor_opa(0)
         cls.default.set_bg_opa(255)
+        cls.default.set_text_font(lv.font_montserrat_14)
 
         cls.container_bgffffff.init()
         cls.container_bgffffff.set_radius(0)
@@ -132,8 +148,7 @@ class MainScreenStyle(object):
         cls.btn_group.set_pad_top(0)
         cls.btn_group.set_pad_bottom(0)
         cls.btn_group.set_text_color(lv.color_make(0x00, 0x00, 0x00))
-        cls.btn_group.set_text_font(lv.font_montserrat_14)
-        # cls.btn_group.set_text_font_v2("lv_font_18.bin", 24, 0)
+        cls.btn_group.set_text_font(lv.font_consolas_12)
 
 
 class DevInfoScreenStyle(object):

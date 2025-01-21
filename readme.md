@@ -1,129 +1,140 @@
-# EC600MCNLE POC Demo 使用说明
+# QuecPython POC Solution
 
-## 概述
+[中文](readme_zh.md) | English
 
-此 demo 在搭载`EC600MCNLE`模组的开发板上开发，麦克风和按键用的是开发板上的，屏幕采用分辨率为`240×240`的`ST7789`，外接一个喇叭到开发板作为音频输出。
+Welcome to the QuecPython POC Solution repository! This repository provides a comprehensive solution for developing POC device applications using QuecPython.
 
-- `code`：所有的代码文件
-- `firmware`：模组固件包
+## Table of Contents
 
-固件和脚本烧录方法：[QPYcom 固件脚本下载 - QuecPython (quectel.com)](https://python.quectel.com/doc/Application_guide/zh/dev-tools/QPYcom/qpycom-dw.html)
+- [Introduction](#introduction)
+- [Features](#features)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running the Application](#running-the-application)
+- [Directory Structure](#directory-structure)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
 
-## 1. 外设
+## Introduction
 
-### 1.1 LCD
+QuecPython has launched a POC intercom solution, which is based on the BND PoC library and can only use firmware that supports PoC functionality.
 
-- 型号：ST778
-- 分辨率：240×240
+The module models that support PoC functionality are as follows:
 
-> LCD初始化详情参考移远wiki：[LCD显示屏](https://python.quectel.com/doc/API_reference/zh/peripherals/machine.LCD.html)
+| Series | Module                                                       |
+| :----- | :----------------------------------------------------------- |
+| EC600M | EC600MCN_LA、EC600MCN_LE、EC600MCN_LF、EC600MEU_LA、EC600MLA_LA |
+| EC800M | EC800MCN_LA、EC800MCN_LE                                     |
+| EC600U | EC600UEU_AB                                                  |
+| EC800G | EC800GCN_LD                                                  |
 
-### 1.2 按键
+## Features
 
-基于开发板上对应的KEY1、KEY2
+- Provide half duplex high-definition and secure voice intercom function.
+- Support connecting commonly used intercom platforms: ZZD, SL, BND and XIN platforms.
+- Ultra long standby: Supports ultra-low power consumption mode.
+- Using Python language for easy secondary development.
 
-| KEY  |         引脚          |                           功能说明                           |
-| :--: | :-------------------: | :----------------------------------------------------------: |
-| KEY1 | 引脚号60  ---  GPIO13 |                           长按说话                           |
-| KEY2 | 引脚号59  ---  GPIO12 | 单击：列表滚动<br />双击：选择当前列表<br />长按：返回上一级目录<br /> |
+## Getting Started
 
-> 按键中断详情参考：[ExtInt - 外部中断](https://python.quectel.com/doc/API_reference/zh/peripherals/machine.ExtInt.html)
+### Prerequisites
 
-### 1.3 音频
+Before you begin, ensure you have the following prerequisites:
 
-|           接口           |                 引脚                 |      说明      |
-| :----------------------: | :----------------------------------: | :------------: |
-|          麦克风          | MIC_N：引脚号23<br />MIC_P：引脚号24 |    说话录音    |
-| 听筒<br />（需外接听筒） | SPK_N：引脚号21<br />SPK_P：引脚号22 | 播放收到的音频 |
+- **Hardware**:
+  - Two sets of EC600MCNTE QuecPython standard development boards, each including antenna, Type-C data cable, etc
+    > Click for POC EVB's [schematic](https://python.quectel.com/en/wp-content/uploads/sites/2/2024/12/EC600X_Series_EVB_SCH.pdf) and [silk screen](https://python.quectel.com/en/wp-content/uploads/sites/2/2024/12/EC600X_Series_EVB_SilkScreen.pdf) documents.
+  - PC (Windows 7, Windows 10, or Windows 11)
+  - LCD display screen
+    - Module: ST7789
+    - Resolution: 240×240
+  - Horn
+    - Any 2-5W power horn is sufficient
 
-## 2. 程序分析
+- **Software**:
+  - USB driver for the QuecPython module: [QuecPython_USB_Driver_Win10_ASR](https://images.quectel.com/python/2023/04/Quectel_Windows_USB_DriverA_Customer_V1.1.13.zip)
+  - debugging tool: [QPYcom](https://python.quectel.com/en/wp-content/uploads/sites/2/2024/11/QPYcom_V3.6.0.zip)
+  - QuecPython firmware and related software resources.
+  - Python text editor (e.g., [VSCode](https://code.visualstudio.com/), [Pycharm](https://www.jetbrains.com/pycharm/download/)).
 
-### 2.1 目录结构
+### Installation
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/QuecPython/solution-POC.git
+   cd solution-POC
+   ```
+
+2. **Flash the Firmware**:
+   Follow the [instructions](https://python.quectel.com/doc/Application_guide/en/dev-tools/QPYcom/qpycom-dw.html#Download-Firmware) to flash the firmware to the development board.
+
+### Running the Application
+
+1. **Connect the Hardware**:
+   Connect the hardware according to the following diagram:
+   <img src="./docs/zh/media/wire_connection.png" style="zoom:67%;" /> 
+   1. Connect the horn to the pins labeled `SPK+` and `SPK-` in the diagram.
+   2. Connect the LCD screen to the pin bank labeled with the word `LCD`.
+   3. Insert an available Nano SIM card at the indicated position.
+   4. Connect the antenna to the antenna connector marked with the word `LTE`.
+   5. Connect the development board and computer using a Type-C data cable.
+
+2. **Download Code to the Device**:
+   - Launch the QPYcom debugging tool.
+   - Connect the data cable to the computer.
+   - Press the **PWRKEY** button on the development board to start the device.
+   - Follow the [instructions](https://python.quectel.com/doc/Application_guide/en/dev-tools/QPYcom/qpycom-dw.html#Download-Script) to import all files within the `code` folder into the module's file system, preserving the directory structure.
+
+3. **Run the Application**:
+   - Select the `File` tab.
+   - Select the `poc_main.py` script.
+   - Right-click and select `Run` or use the run shortcut button to execute the script.
+
+## Directory Structure
 
 ```plaintext
-.
-├── README.MD
-├── code
-│   ├── common.py
-│   ├── dev
+solution-POC/
+├── code/
+│   ├── dev/
 │   │   ├── key.py
 │   │   └── lcd.py
-│   ├── img
+│   ├── img/
 │   │   ├── battery_1.png
 │   │   ├── battery_2.png
-│   │   ├── ......
-│   │   └── signal_5.png
-│   ├── poc_main.py
+│   │   └── ...
+│   ├── ui/
+│   │   ├── styles.py
+│   │   └── ui.py
+│   ├── common.py
 │   ├── services.py
-│   └── ui
-│       ├── styles.py
-│       └── ui.py
-└── firmware
-    └── EC600MCNLER06A01M08_POC_XBND_OCPU_QPY_BETA0813.zip
+│   └── poc_main.py
+├── docs/
+│   ├── en/
+│   │   └── media/
+│   └── zh/
+│       └── media/
+├── EC600MCNLER06A01M08_POC_XBND_OCPU_QPY_BETA0117.zip
+├── LICENSE
+├── readme.md
+└── readme_zh.md
 ```
 
-### 2.2 简要流程图
+## Contributing
 
-![image-20240814140616290](https://typora-breeze.oss-cn-wuhan-lr.aliyuncs.com/img-md/image-20240814140616290.png) 
+We welcome contributions to improve this project! Please follow these steps to contribute:
 
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature/your-feature`).
+3. Commit your changes (`git commit -m 'Add your feature'`).
+4. Push to the branch (`git push origin feature/your-feature`).
+5. Open a Pull Request.
 
+## License
 
-### 2.3 简述初始化流程
+This project is licensed under the Apache License. See the [LICENSE](LICENSE) file for details.
 
-LCD 和 lvgl 的初始化在`ui.py`中进行，属于全局变量。
+## Support
 
-其他初始化流程如下：
-
-`App`是一个`poc_main.py`的一个类，对其设置按键、UI、屏幕栏、消息框以及服务之后启动即可。
-
-`App`充当一个程序启动的管理器，包含程序的基础组成部分。
-
-`App`的`UI`负责所有屏幕管理，以及部分事件消息的中转等
-
-`App`的服务负责提供基础服务，如网络服务，媒体服务、以及最重要的`Poc`服务等
-
-![image-20240814141030603](https://typora-breeze.oss-cn-wuhan-lr.aliyuncs.com/img-md/image-20240814141030603.png) 
-
-### 2.4 界面
-
-1. `WelcomeScreen`：检测`sim`卡状态、绑定平台
-2. `MenuBar`：每个界面（`WelcomeScreen`除外）的菜单栏显示，包括信号、时间、电量
-3. `MainScreen`：主界面功能展示，包括多个列表
-4. `DevScreen`：设备信息，包括`ICCID`、`IMEI`、固件版本
-5. `GroupScreen`：所在群组显示界面
-6. `MemberScreen`：所添加的成员列表显示界面
-
-### 2.5 服务
-
-1. `DevInfoService`：提供设备信息服务
-2. `MediaService`：提供音频服务
-3. `NetService`：提供网络服务
-4. `PocService`：提供`Poc`对讲服务
-
-## 3. 演示操作
-
-### 3.1 程序启动
-
-在`QPYcom`运行`poc_main.py`脚本，程序开始运行，进入到`WelcomeScreen`界面，同时获取`sim`卡状态和当前账号，并通过`tts`语音播报当前登录用户及其加入的群组信息。
-
-![image-20240814094634924](https://typora-breeze.oss-cn-wuhan-lr.aliyuncs.com/img-md/image-20240814094634924.png) 
-
-**注意**：未插入`sim`卡时不会进入到`MainScreen`，插入`sim`卡重启设备后即可正常运行
-
-![image-20240814114345769](https://typora-breeze.oss-cn-wuhan-lr.aliyuncs.com/img-md/image-20240814114345769.png) 
-
-### 3.2  主界面
-
-主界面包含多个选项列表（用户可自行添加、修改），每个选项对应一个新的界面，双击`key2`键，可以进入到所选中的界面当中，长按`key2`键则返回上一级界面
-
-![image-20240814094658732](https://typora-breeze.oss-cn-wuhan-lr.aliyuncs.com/img-md/image-20240814094658732.png) 
-
-
-### 3.3 对讲
-
-1. 长按`key1`键，可以与同一群组内的成员进行对讲，菜单栏显示麦克风图标
-2. 说话结束后，松开`key1`键，结束对讲功能
-3. 在主动呼叫或被对方呼叫时，都会有消息弹窗提示
-4. 对方讲话时，菜单栏显示听筒图标
-
-![ec951d1df2f268a698b0e3d3119b16e](https://typora-breeze.oss-cn-wuhan-lr.aliyuncs.com/img-md/ec951d1df2f268a698b0e3d3119b16e.jpg)
+If you have any questions or need support, please refer to the [QuecPython documentation](https://python.quectel.com/doc/en) or open an issue in this repository.

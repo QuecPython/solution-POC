@@ -196,7 +196,7 @@ class ST7789():
             self._displayOff,
             None)
         
-    def clear(self, color=0xFFFFFF):     # 清屏
+    def clear(self, color=0x000000):     # 清屏
         self._lcd.lcd_clear(color)
         
     def display_on(self):
