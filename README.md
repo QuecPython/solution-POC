@@ -1,6 +1,6 @@
 # QuecPython POC Solution
 
-[中文](readme_zh.md) | English
+[中文](README.zh.md) | English
 
 Welcome to the QuecPython POC Solution repository! This repository provides a comprehensive solution for developing POC device applications using QuecPython.
 
