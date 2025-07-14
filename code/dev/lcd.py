@@ -1,7 +1,5 @@
 from machine import LCD, Pin
 
-white = 0xFFFF
-black = 0x0000
 
 XSTART_H = 0xf0
 XSTART_L = 0xf1
@@ -17,23 +15,18 @@ XEND     = 0xD1
 YSTART   = 0xD2
 YEND     = 0xD3
 
-class ST7789():
-    def __init__(self, Interface, SPICS, SPIRST, SPIDC, SPIPort=1, SPIMode=0, InitData=None, width=240, height=240, clk=26000):
-        self._LcdInit(Interface, SPICS, SPIRST, SPIDC, SPIPort, SPIMode, InitData, width, height, clk)
-        self.clear(white)
-        
-    def _LcdInit(self, Interface, SPICS, SPIRST, SPIDC, SPIPort, SPIMode, InitData, width, height, clk):
+
+class ST7735():
+    def __init__(self, InitData=None, width=128, height=160, clk=13000, dir=0):
+        self._LcdInit(InitData, width, height, clk, dir)
+        # print("ST7735 LCD initialized successfully.")
+        self._lcd.lcd_clear(0x0000)
+
+    def _LcdInit(self, InitData, width, height, clk, dir):
         self._lcd_w = width
         self._lcd_h = height
-        self._interface = Interface
-        self._spiport = SPIPort
-        self._spimode = SPIMode
-        self._spics = SPICS
-        self._spidc = SPIDC
-        self._spirst = SPIRST
         self._clk = clk
-        self.gpio = Pin(Pin.GPIO15, Pin.OUT, Pin.PULL_DISABLE, 1)
-        
+        self.gpio = Pin(Pin.GPIO18, Pin.OUT, Pin.PULL_DISABLE, 1)
         L2R_U2D = 0
         L2R_D2U = 1
         R2L_U2D = 2
@@ -45,7 +38,7 @@ class ST7789():
         D2U_R2L = 7
 
         regval = 0
-        if(dir == L2R_U2D):
+        if (dir == L2R_U2D):
             regval |= (0 << 7) | (0 << 6) | (0 << 5)
         elif dir == L2R_D2U:
             regval |= (1 << 7) | (0 << 6) | (0 << 5)
@@ -63,100 +56,118 @@ class ST7789():
             regval |= (1 << 7) | (1 << 6) | (1 << 5)
         else:
             regval |= (0 << 7) | (0 << 6) | (0 << 5)
-        if(regval & 0X20):
-            if(width < height):
+        if (regval & 0X20):
+            if (width < height):
                 self._lcd_w = height
                 self._lcd_h = width
         else:
-            if(width > height):
+            if (width > height):
                 self._lcd_w = height
                 self._lcd_h = width
 
         init_data = (
-            2, 0, 120,
             0, 0, 0x11,
-            0, 1, 0x36,
-            1, 1, regval,
-            0, 1, 0x3A,
-            1, 1, 0x05,
-            0, 0, 0x21,
-            0, 5, 0xB2,
-            1, 1, 0x05,
-            1, 1, 0x05,
-            1, 1, 0x00,
-            1, 1, 0x33,
-            1, 1, 0x33,
-            0, 1, 0xB7,
-            1, 1, 0x23,
-            0, 1, 0xBB,
-            1, 1, 0x22,
-            0, 1, 0xC0,
-            1, 1, 0x2C,
-            0, 1, 0xC2,
+            2, 0, 120,
+
+            0, 3, 0xb1,
             1, 1, 0x01,
-            0, 1, 0xC3,
-            1, 1, 0x13,
-            0, 1, 0xC4,
-            1, 1, 0x20,
-            0, 1, 0xC6,
-            1, 1, 0x0F,
-            0, 2, 0xD0,
-            1, 1, 0xA4,
-            1, 1, 0xA1,
-            0, 1, 0xD6,
-            1, 1, 0xA1,
-            0, 14, 0xE0,
-            1, 1, 0x70,
-            1, 1, 0x06,
-            1, 1, 0x0C,
             1, 1, 0x08,
-            1, 1, 0x09,
-            1, 1, 0x27,
-            1, 1, 0x2E,
-            1, 1, 0x34,
-            1, 1, 0x46,
-            1, 1, 0x37,
-            1, 1, 0x13,
-            1, 1, 0x13,
-            1, 1, 0x25,
-            1, 1, 0x2A,
-            0, 14, 0xE1,
-            1, 1, 0x70,
-            1, 1, 0x04,
-            1, 1, 0x08,
-            1, 1, 0x09,
-            1, 1, 0x07,
+            1, 1, 0x05,
+
+            0, 3, 0xb2,
+            1, 1, 0x05,
+            1, 1, 0x3c,
+            1, 1, 0x3c,
+
+            0, 6, 0xb3,
+            1, 1, 0x05,
+            1, 1, 0x3c,
+            1, 1, 0x3c,
+            1, 1, 0x05,
+            1, 1, 0x3c,
+            1, 1, 0x3c,
+
+            0, 1, 0xb4,
             1, 1, 0x03,
-            1, 1, 0x2C,
-            1, 1, 0x42,
-            1, 1, 0x42,
-            1, 1, 0x38,
-            1, 1, 0x14,
-            1, 1, 0x14,
-            1, 1, 0x27,
-            1, 1, 0x2C,
-            0, 0, 0x29,
+
+            0, 3, 0xc0,
+            1, 1, 0x28,
+            1, 1, 0x08,
+            1, 1, 0x04,
+
+            0, 1, 0xc1,
+            1, 1, 0xc0,
+
+            0, 2, 0xc2,
+            1, 1, 0x0d,
+            1, 1, 0x00,
+
+            0, 2, 0xc3,
+            1, 1, 0x8d,
+            1, 1, 0x2a,
+
+            0, 2, 0xc4,
+            1, 1, 0x8d,
+            1, 1, 0xee,
+
+            0, 1, 0xc5,
+            1, 1, 0x12,
+
             0, 1, 0x36,
             1, 1, regval,
-            0, 4, 0x2a,
+
+            0, 16, 0xe0,
+            1, 1, 0x04,
+            1, 1, 0x22,
+            1, 1, 0x07,
+            1, 1, 0x0a,
+            1, 1, 0x2e,
+            1, 1, 0x30,
+            1, 1, 0x25,
+            1, 1, 0x2a,
+            1, 1, 0x28,
+            1, 1, 0x26,
+            1, 1, 0x2e,
+            1, 1, 0x3a,
             1, 1, 0x00,
+            1, 1, 0x01,
+            1, 1, 0x03,
+            1, 1, 0x13,
+
+            0, 16, 0xe1,
+            1, 1, 0x04,
+            1, 1, 0x16,
+            1, 1, 0x06,
+            1, 1, 0x0d,
+            1, 1, 0x2d,
+            1, 1, 0x26,
+            1, 1, 0x23,
+            1, 1, 0x27,
+            1, 1, 0x27,
+            1, 1, 0x25,
+            1, 1, 0x2d,
+            1, 1, 0x3b,
             1, 1, 0x00,
+            1, 1, 0x01,
+            1, 1, 0x04,
+            1, 1, 0x13,
+
+            0, 1, 0x3a,
+            1, 1, 0x05,
+
+            0, 1, 0x35,
             1, 1, 0x00,
-            1, 1, 0xef,
-            0, 4, 0x2b,
-            1, 1, 0x00,
-            1, 1, 0x00,
-            1, 1, 0x00,
-            1, 1, 0xef,
-            0, 0, 0x2c,
+
+            0, 0, 0x29,
+            1, 0, 0x2c,
         )
         lcd_set_display_area = (
-            0, 4, 0x2a,             # 0x2a 设置列
+            0, 4, 0x2a,
             1, 1, XSTART_H,
             1, 1, XSTART_L,
             1, 1, XEND_H,
             1, 1, XEND_L,
-            0, 4, 0x2b,             # 0x2b 设置行
+            0, 4, 0x2b,
             1, 1, YSTART_H,
             1, 1, YSTART_L,
             1, 1, YEND_H,
@@ -164,15 +175,16 @@ class ST7789():
             0, 0, 0x2c,
         )
         lcd_display_on = (
-            0, 0, 0x11,      # 0x11 唤醒
+            0, 0, 0x11,
             2, 0, 20,
-            0, 0, 0x29,      # 0x29 显示使能
+            0, 0, 0x29,
         )
         lcd_display_off = (
-            0, 0, 0x28,      # 0x28 显示关闭
+            0, 0, 0x28,
             2, 0, 120,
-            0, 0, 0x10,      # 0x10 睡眠
+            0, 0, 0x10,
         )
+
         if InitData is None:
             self._initData = bytearray(init_data)
         else:
@@ -187,7 +199,7 @@ class ST7789():
             self._initData,
             self._lcd_w,
             self._lcd_h,
-            self._clk,
+            clk,
             1,
             4,
             0,
@@ -195,13 +207,13 @@ class ST7789():
             self._displayOn,
             self._displayOff,
             None)
-        
+        self._lcd.lcd_display_on()
+
     def clear(self, color=0x000000):     # 清屏
         self._lcd.lcd_clear(color)
-        
+
     def display_on(self):
         self._lcd.lcd_display_on()
 
     def display_off(self):
         self._lcd.lcd_display_off()
-

@@ -1,41 +1,45 @@
-
 import sys
 
 try:
     from common import AbstractLoad, PrintLog
     from dev.key import KeyManger
     from services import *
-    from ui.ui import PocUI,\
-                      MenuBar,\
-                      MainScreen,\
-                      WelcomeScreen,\
-                      PromptBox,\
-                      MemberScreen,\
-                      GroupScreen,\
-                      SettingScreen,\
-                      WeatherScreen,\
-                      DeviceScreen,\
-                      ICCIDScreen,\
-                      IMEIScreen,\
-                      FirmwareScreen
+    from ui.ui import (
+        PocUI,
+        MenuBar,
+        MainScreen,
+        WelcomeScreen,
+        PromptBox,
+        MemberScreen,
+        GroupScreen,
+        SettingScreen,
+        WeatherScreen,
+        DeviceScreen,
+        ICCIDScreen,
+        IMEIScreen,
+        FirmwareScreen,
+        WeatherInfoScreen,
+    )
 except:
     from usr.common import AbstractLoad, PrintLog
     from usr.dev.key import KeyManger
     from usr.services import *
-    from usr.ui.ui import PocUI,\
-                          MenuBar,\
-                          MainScreen,\
-                          WelcomeScreen,\
-                          PromptBox,\
-                          MemberScreen,\
-                          GroupScreen,\
-                          SettingScreen,\
-                          WeatherScreen,\
-                          DeviceScreen,\
-                          ICCIDScreen,\
-                          IMEIScreen,\
-                          FirmwareScreen
-
+    from usr.ui.ui import (
+        PocUI,
+        MenuBar,
+        MainScreen,
+        WelcomeScreen,
+        PromptBox,
+        MemberScreen,
+        GroupScreen,
+        SettingScreen,
+        WeatherScreen,
+        DeviceScreen,
+        ICCIDScreen,
+        IMEIScreen,
+        FirmwareScreen,
+        WeatherInfoScreen,
+    )
 
 
 class App(object):
@@ -52,31 +56,31 @@ class App(object):
         cls.__key = key
 
     @classmethod
-    def add_bar(cls, bar:AbstractLoad):
+    def add_bar(cls, bar: AbstractLoad):
         """
         这里只负责向UI添加屏幕栏, 屏幕栏由UI进行管理
         """
         try:
             if isinstance(bar, AbstractLoad):
-                cls.__ui.add_bar(bar)     
+                cls.__ui.add_bar(bar)
         except Exception as e:
             raise Exception("[App](abort) add_bar error: ", e)
         return cls
 
     @classmethod
-    def add_msgbox(cls, msgbox:AbstractLoad):
+    def add_msgbox(cls, msgbox: AbstractLoad):
         """
         这里只负责向UI添加消息框, 消息框由UI进行管理
         """
         try:
             if isinstance(msgbox, AbstractLoad):
-                cls.__ui.add_msgbox(msgbox)     
+                cls.__ui.add_msgbox(msgbox)
         except Exception as e:
             raise Exception("[App](abort) add_msgbox error: ", e)
         return cls
 
     @classmethod
-    def add_screen(cls, screen:AbstractLoad):
+    def add_screen(cls, screen: AbstractLoad):
         """
         这里只负责向UI添加屏幕, 屏幕由UI进行管理
         """
@@ -84,19 +88,19 @@ class App(object):
             raise Exception("UI is None.")
         try:
             if isinstance(screen, AbstractLoad):
-                cls.__ui.add_screen(screen)    
+                cls.__ui.add_screen(screen)
         except Exception as e:
             raise Exception("[App](abort) add_screen error: ", e)
         return cls
-        
+
     @classmethod
-    def add_service(cls, service:AbstractLoad):
+    def add_service(cls, service: AbstractLoad):
         """
         添加服务
         """
         try:
             if isinstance(service, AbstractLoad):
-                service.instance_after()   # 初始化服务
+                service.instance_after()  # 初始化服务
                 cls.__service_list.append(service)
         except Exception as e:
             raise Exception("[App](abort) add_service error: ", e)
@@ -112,10 +116,11 @@ class App(object):
         try:
             # start ui
             cls.__ui.start()
-            
+
             import lvgl as lv
+
             lv.task_handler()
-            
+
             # start services
             for service in App.__service_list:
                 service.load_before()
@@ -125,45 +130,45 @@ class App(object):
             print("[App] exec error: ", e)
 
 
+if __name__ == "__main__":
 
-if __name__ == '__main__':
-    
-    #=== 1.Add key ===
+    # === 1.Add key ===
     App.add_key(KeyManger())
 
-    #=== 2.add main UI ===
+    # === 2.add main UI ===
     App.set_ui(PocUI())
 
-    #=== 3.Add screen bar ===
+    # === 3.Add screen bar ===
     App.add_bar(MenuBar())
 
-    #=== 4.Add message box ===
+    # === 4.Add message box ===
     App.add_msgbox(PromptBox())
 
-    #=== 5.Add UI screen ===
-    App.add_screen( MenuBar()) \
-        .add_screen( MainScreen()) \
-        .add_screen( WelcomeScreen() ) \
-        .add_screen( PromptBox() ) \
-        .add_screen( MemberScreen() ) \
-        .add_screen( GroupScreen() ) \
-        .add_screen( SettingScreen() ) \
-        .add_screen( DeviceScreen() ) \
-        .add_screen( ICCIDScreen() ) \
-        .add_screen( IMEIScreen()) \
-        .add_screen( FirmwareScreen() ) \
-        .add_screen( WeatherScreen())
-    
-    #=== 6.Add Service ===
-    App.add_service( NetService()) \
-        .add_service( PocService()) \
-        .add_service( MediaService()) \
-        .add_service( DevInfoService() ) \
-        .add_service( BatteryManager() )
+    # === 5.Add UI screen ===
+    App.add_screen(MenuBar()).add_screen(MainScreen()).add_screen(
+        WelcomeScreen()
+    ).add_screen(PromptBox()).add_screen(MemberScreen()).add_screen(
+        GroupScreen()
+    ).add_screen(
+        SettingScreen()
+    ).add_screen(
+        DeviceScreen()
+    ).add_screen(
+        ICCIDScreen()
+    ).add_screen(
+        IMEIScreen()
+    ).add_screen(
+        FirmwareScreen()
+    ).add_screen(
+        WeatherScreen()
+    ).add_screen(
+        WeatherInfoScreen()
+    )  # Add the menu bar again to ensure it is available in the UI
 
-    #=== 7.Run the app ===
+    # === 6.Add Service ===
+    App.add_service(NetService()).add_service(PocService()).add_service(
+        MediaService()
+    ).add_service(DevInfoService()).add_service(BatteryManager()).add_service(LedManager())
+
+    # === 7.Run the app ===
     App.exec()
-
-
-
-                      

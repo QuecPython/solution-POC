@@ -17,6 +17,7 @@ class EventMap(object):
     """
     __event_map = dict()
     __event_log = None
+    __threadid_map = dict()
 
     MODE_SYNC = 0
     MODE_ASYNC = 1
@@ -68,7 +69,7 @@ class EventMap(object):
         
         elif cls.MODE_ASYNC == mode:
             try:
-                _thread.start_new_thread(cls.__event_map[event], (event, msg))
+                cls.__threadid_map[event] = _thread.start_new_thread(cls.__event_map[event], (event, msg))
             except Exception as e:
                 if cls.__event_log:
                     cls.__event_log.info("ERROR executed (event) -> {} (params) -> {} (result) -> {}".format(event, msg, res))
@@ -76,6 +77,17 @@ class EventMap(object):
             if cls.__event_log:
                 cls.__event_log.info("ASYNC executed (event) -> {} (params) -> {} (result) -> {}".format(event, msg, None))
 
+    @classmethod
+    def send_stop(cls, event):
+        try:
+            for item in cls.__threadid_map:
+                if item == event:
+                    _thread.stop_thread(cls.__threadid_map[item])
+                    del cls.__threadid_map[item]
+                    print("thread event={} is del".format(event))
+                    break
+        except Exception as e:
+            print("thread is is not exist")
     @classmethod
     def event_map(cls):
         """

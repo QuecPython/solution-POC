@@ -53,7 +53,7 @@ class FontStyle(object):
         cls.consolas_12_txt000000_bg2195f6.set_bg_grad_dir(lv.GRAD_DIR.VER)
         cls.consolas_12_txt000000_bg2195f6.set_bg_opa(0)
         cls.consolas_12_txt000000_bg2195f6.set_text_color(lv.color_make(0x00, 0x00, 0x00))
-        cls.consolas_12_txt000000_bg2195f6.set_text_font(lv.font_consolas_12)
+        cls.consolas_12_txt000000_bg2195f6.set_text_font_v2("consolas_8.bin", 13, 0)
         cls.consolas_12_txt000000_bg2195f6.set_text_letter_space(0)
         cls.consolas_12_txt000000_bg2195f6.set_pad_left(0)
         cls.consolas_12_txt000000_bg2195f6.set_pad_right(0)
@@ -148,7 +148,7 @@ class MainScreenStyle(object):
         cls.btn_group.set_pad_top(0)
         cls.btn_group.set_pad_bottom(0)
         cls.btn_group.set_text_color(lv.color_make(0x00, 0x00, 0x00))
-        cls.btn_group.set_text_font(lv.font_consolas_12)
+        cls.btn_group.set_text_font_v2("consolas_8.bin", 13, 0)
 
 
 class DevInfoScreenStyle(object):

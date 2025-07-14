@@ -39,7 +39,42 @@ BATTERY_OCV_TABLE = {
     },
 }
 
-# ADC0 引脚19
+
+class LedManager(object):
+    def __init__(self):
+        self.R_light = Pin(Pin.GPIO6, Pin.OUT, Pin.PULL_PU, 0)
+        self.G_light = Pin(Pin.GPIO7, Pin.OUT, Pin.PULL_PU, 0)
+        self.RGB_RED = 0x01
+        self.RGB_GREEN = 0x02
+        
+    def instance_after(self):
+        """订阅此类所有的事件到 EventMesh中"""
+        EventMap.bind("switch_led", self.switch)
+        EventMap.bind("blink_led", self.blink)
+
+    # msg=1 red灯 msg=2 绿灯  0 关闭
+    def switch(self, event, msg):
+        self.R_light.write(1) if msg & self.RGB_RED else self.R_light.write(0)
+        self.G_light.write(1) if msg & self.RGB_GREEN else self.G_light.write(0)
+    
+    # msg=(灯索引,休眠时间) 指定某个灯闪烁
+    def blink(self, event, msg):
+        """Blink the specified color for a given duration."""
+        self.switch(None, 0)  # 先关闭所有灯
+        while True:
+            self.thread_id = _thread.get_ident()
+            blink_light = list()
+            blink_light.append(self.R_light) if msg[0] & self.RGB_RED else None
+            blink_light.append(self.G_light) if msg[0] & self.RGB_GREEN else None
+
+            for i in blink_light:
+                i.write(1)
+            utime.sleep(msg[1])
+            for i in blink_light:
+                i.write(0)
+            utime.sleep(msg[1])
+
+
 class Battery(object):
     """This class is for battery info.
 
@@ -207,13 +242,10 @@ class BatteryManager(AbstractLoad):
         return battery
 
 
-
-
-
 class DevInfoService(AbstractLoad):
     def __init__(self):
         self.usb = USB()
-        self.week_list = ["一","二","三","四","五","六","日"]
+        self.week_list = ["一", "二", "三", "四", "五", "六", "日"]
 
     def instance_after(self):
         EventMap.bind("devinfoservice__get_time", self.__get_time)
@@ -228,7 +260,7 @@ class DevInfoService(AbstractLoad):
     def __get_time(self, event=None, msg=None):
         local_time = utime.localtime()
         date = "{:04}-{:02}-{:02}".format(local_time[0], local_time[1], local_time[2])
-        time = "{:02}:{:02}:{:02}".format(local_time[3], local_time[4], local_time[5])
+        time = "{:02}:{:02}".format(local_time[3], local_time[4])
         result = [date, time, self.week_list[local_time[6]]]
         return result
 
@@ -246,7 +278,7 @@ class DevInfoService(AbstractLoad):
         state = self.usb.getStatus()
         if state == -1: state = 0
         return state
-    
+
     def __get_iccid(self, event, msg):
         iccid = sim.getIccid()
         if -1 == iccid:
@@ -256,10 +288,10 @@ class DevInfoService(AbstractLoad):
             if'中国电信' == dev_ope or '中国联通' == dev_ope:
                 iccid = iccid[0:19]
         return iccid
-    
+
     def __get_imei(self, event, msg):
-        imei = modem.getDevImei()       
-        if -1 == imei: imei = None
+        imei = modem.getDevImei()
+        imei = None if -1 == imei else imei
         return imei
 
     def __get_device_operator(self, event=None, msg=None):
@@ -268,7 +300,7 @@ class DevInfoService(AbstractLoad):
         """
         net_ope_map = {
             "46001": "中国联通", "46006": "中国联通", "46009": "中国联通", "46010": "中国联通",
-            "46000": "中国移动", "46002": "中国移动", "46004": "中国移动", 
+            "46000": "中国移动", "46002": "中国移动", "46004": "中国移动",
             "46007": "中国移动", "46020": "中国移动", "46008": "中国移动", "46013": "中国移动",
             "46003": "中国电信", "46005": "中国电信", "46011": "中国电信", "46012": "中国电信"
         }
@@ -278,7 +310,7 @@ class DevInfoService(AbstractLoad):
         except Exception:
             return "无"
         return net_ope_map.get(_imsi, None)
-    
+
     def get_device_fw_version(self, *args):
         '''
         获取设备固件版本号
@@ -286,7 +318,7 @@ class DevInfoService(AbstractLoad):
         fw_version = modem.getDevFwVersion()
         if isinstance(fw_version, str):
             return fw_version
-        return "--"  
+        return "--"
 
     def __get_battery(self, event=None, msg=None):
         """
@@ -311,17 +343,15 @@ class DevInfoService(AbstractLoad):
         else:
             img_path = 'U:/img/battery_' + str(level) + '.png'
         return img_path
-    
+
     def __get_signal(self, event=None, msg=None):
         return net.csqQueryPoll()
-    
+
     def get_usb_state(self, event=None, msg=None):
         state = self.usb.getStatus()
         if state == -1:
             state = 0
         return state
-
-
 
 
 class MediaService(AbstractLoad):
@@ -331,16 +361,18 @@ class MediaService(AbstractLoad):
     def __init__(self):
         self.aud = audio.Audio(0)  # 0听筒 1耳机 2喇叭
         self.tts = audio.TTS(0)
-        self.tts.setVolume(9)
         self.q = queue.Queue()
         
         self.mic_det = ExtInt(ExtInt.GPIO14, ExtInt.IRQ_RISING_FALLING, ExtInt.PULL_PU, self.__mic)
         self.mic_det.enable()
-        self.p1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 0)
+        self.p1 = Pin(Pin.GPIO1, Pin.OUT, Pin.PULL_DISABLE, 1)
         self.aud.set_pa(Pin.GPIO1, 4)
         self.mute_value = 0
         self.mute = 0
-        
+        self.vol_list = [0, 3, 4, 5, 6, 7, 8, 9, 10]
+        self.vol_cur = 7
+        self.__set_volume(self.vol_list[self.vol_cur])  # 设置音量为7
+
         self.noise_reduction_switch = Pin(Pin.GPIO38, Pin.OUT, Pin.PULL_DISABLE, 0)
 
     def __mic(self, args):
@@ -356,6 +388,8 @@ class MediaService(AbstractLoad):
         EventMap.bind("mediaservice__beep_tone", self.__beep_tone)
         EventMap.bind("mediaservice__tts_play", self.__tts_play)
         EventMap.bind("mediaservice__tts_stop", self.__tts_stop)
+        EventMap.bind("mediaservice__vol_add", self.add_volume)
+        EventMap.bind("mediaservice__vol_reduce", self.reduce_volume)
         poc.set_vol(1, 8)
         poc.set_vol(2, 1)
 
@@ -373,17 +407,47 @@ class MediaService(AbstractLoad):
         self.aud.aud_tone_play(16, 100)
 
     def __get_mic_det_state(self, event=None, msg=None):
-        return self.mic_det.read_level() 
+        return self.mic_det.read_level()
 
     def __tts_play(self, event=None, msg=None):
-        if msg[0][0] == '0':
+        if msg[0][0] == '0':    # TODO
             self.tts.play(4, msg[1], 2, '[n1]' + msg[0])
         else:
             poc.play_tts(msg[0], msg[1])
 
     def __tts_stop(self, event, msg):
-        self.tts.stop()     
+        self.tts.stop()
+    
+    def get_volume(self, event=None, msg=None):
+        """获取音量"""
+        return self.aud.getVolume()
+    
+    def __set_volume(self, vol):
+        """设置音量"""
+        if vol != self.get_volume() and 0 <= vol <= 11:
+            if vol == 0:
+                self.aud.set_pa(Pin.GPIO1, 0)
+            if vol != 0 and self.get_volume() == 0:
+                self.aud.set_pa(Pin.GPIO1, 4)
+            self.aud.setVolume(vol)
+        
+    def add_volume(self, event, msg):
+        """添加音量"""
+        self.vol_cur += 1
+        if self.vol_cur > 8:
+            self.vol_cur = 8
+        if self.mute == 0:
+            self.__set_volume(self.vol_list[self.vol_cur])
+        return self.vol_cur
 
+    def reduce_volume(self, event, msg):
+        """减少音量"""
+        self.vol_cur -= 1
+        if self.vol_cur < 0:
+            self.vol_cur = 0
+        if self.mute == 0:    
+            self.__set_volume(self.vol_list[self.vol_cur])
+        return self.vol_cur
 
 
 class NetService(AbstractLoad):
@@ -393,7 +457,7 @@ class NetService(AbstractLoad):
     THRESHOLD = 10
 
     def __init__(self):
-        self.__check_net = checkNet.CheckNetwork("QuecPython_EC600M_CN", "Poc_Demo_v1.0")
+        self.__check_net = checkNet.CheckNetwork("QuecPython_EC600M_CN", "Poc_v1.0")
         self.__check_net_timer = osTimer()
         self.__check_net_timeout = 60 * 1000
         self.__check_net_error_count = 0
@@ -421,13 +485,14 @@ class NetService(AbstractLoad):
             else:
                 status = 3
             self.__do_net_check()
-            self.__set_net_keepalive(event=None, msg=self.__check_net_timeout)  # 手动开启心跳检测
+            # 手动开启心跳检测
+            self.__set_net_keepalive(event=None, msg=self.__check_net_timeout)
         EventMap.send('welcomescreen__net_status', status)
 
     def __datacall_callback(self, args):
         # pdp = args[0]
         nw_sta = args[1]
-        if nw_sta == 1: # 1 网络已连接
+        if nw_sta == 1:  # 1 网络已连接
             EventMap.send("mediaservice__tts_play", ("网络已连接", 0))
             EventMap.send('welcomescreen__net_status', 2)
             PrintLog.log("NetService", "Network connected.")
@@ -449,7 +514,7 @@ class NetService(AbstractLoad):
     def __set_net_keepalive(self, event, msg):
         self.__check_net_timer.stop()
         self.__check_net_timeout = msg
-        self.__check_net_timer.start(self.__check_net_timeout, 1, lambda arg: self.__do_net_check()) # 心跳检测
+        self.__check_net_timer.start(self.__check_net_timeout, 1, lambda arg: self.__do_net_check())  # 心跳检测
 
     def __do_net_check(self):
         status = 3
@@ -528,6 +593,7 @@ class PocService(AbstractLoad):
         EventMap.bind("pocservice__check_xin_platform", self.__check_xin_platform)
         EventMap.bind("pocservice__get_audio_status", self.__get_audio_status)
         EventMap.bind("request_weather_info", self.request_weather_info)
+        EventMap.bind("get_weather_info", self.get_weather_info)
         EventMap.bind("get_gps_img_state", self.get_gps_img_state)
         EventMap.bind("request_lbs_info", self.request_lbs_info)
 
@@ -594,7 +660,7 @@ class PocService(AbstractLoad):
         poc.request_lbs_info(128, 128, 0.0, 0.0)
 
     def __poc_cell_location_change_cb(self, msg):
-        print("cell_location_cb -----------------  {}".format(msg))
+        PrintLog.log("PocService", "cell_location_cb -----------------  {}".format(msg))
         if not self.__gps_img_show:
             if msg[0]:
                 self.__gps_img_show = msg[0]
@@ -602,7 +668,7 @@ class PocService(AbstractLoad):
         self.get_gps_img_state()
 
     def __poc_location_change_cb(self, msg):
-        print("location_change_cb -----------------  {}".format(msg))
+        PrintLog.log("PocService", "location_change_cb -----------------  {}".format(msg))
         if not self.__gps_img_show:
             if msg[0]:
                 self.__gps_img_show = msg[0]
@@ -671,7 +737,7 @@ class PocService(AbstractLoad):
                     # EventMap.send("update_session_info", "您已被关闭发言")
                     if not self.speak_close_first:
                         self.speak_close_first = True
-                        EventMap.send("pocservice__close_speaker",None ,EventMap.MODE_ASYNC)
+                        EventMap.send("pocservice__close_speaker", None, EventMap.MODE_ASYNC)
             if group[2]:
                 self.__call_time_status = True
                 self.__call_member_timer.start(self.__call_quit_time * 1000, 0, lambda arg: self.__call_member_exit())
@@ -720,7 +786,7 @@ class PocService(AbstractLoad):
 
     def __poc_weather_info_cb(self, data):
         # 天气信息发生变化触发回调
-        print("weather info = {}".format(data))
+        # PrintLog.log("PocService", "weather info = {}".format(data))
         if data and data[0] != "":
             if not self.weather_msg_list:
                 self.weather_timer_task()
@@ -756,9 +822,15 @@ class PocService(AbstractLoad):
 
     def request_weather_info(self, event=None, msg=None):
         state = poc.request_weather_info(0.0, 0.0)
-        print("request_weather_info: {}".format(state))
+        PrintLog.log("PocService", "request_weather_info: {}".format(state))
         if not state:
             poc.request_weather_info(0.0, 0.0)
+    
+    def get_weather_info(self, event=None, msg=None):
+        if self.weather_msg_list:
+            return self.weather_msg_list[msg]
+        else:
+            return None
 
     def __poc_error_cb(self, params):
         PrintLog.log("PocService", "poc error: {}".format(params))
@@ -824,7 +896,6 @@ class PocService(AbstractLoad):
         SecureData.Store(8, buf, 10)
 
     def __init_cb(self, msg):
-        pass
         pass
 
 
